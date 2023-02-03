@@ -9,7 +9,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ICurveCryptoV2} from "../interfaces/ICurveCryptoV2.sol";
 
 // collect tokens and use it to add liquidity to ARTH/ETH and ARTH/MAHA LP pairs.
-contract UniswapV3 is Ownable, VersionedInitializable, IRouter {
+contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
     address me;
 
     INonfungiblePositionManager public manager;
