@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/MahaDAO/liquidity-contracts#readme",
   "dependencies": {
+    "@openzeppelin/contracts": "^4.8.1",
     "hardhat": "^2.12.6"
   },
   "devDependencies": {
@@ -33,8 +34,17 @@
     "@types/mocha": ">=9.1.0",
     "@types/node": ">=12.0.0",
     "chai": "^4.2.0",
+    "eslint": "^7.29.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-config-standard": "^16.0.3",
+    "eslint-plugin-import": "^2.23.4",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^3.4.0",
+    "eslint-plugin-promise": "^5.1.0",
     "ethers": "^5.4.7",
     "hardhat-gas-reporter": "^1.0.8",
+    "prettier": "^2.3.2",
+    "prettier-plugin-solidity": "^1.0.0-beta.13",
     "solidity-coverage": "^0.8.0",
     "ts-node": ">=8.0.0",
     "typechain": "^8.1.0",
