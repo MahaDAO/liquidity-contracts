@@ -29,6 +29,8 @@ contract CurveRouter is Ownable, VersionedInitializable, IRouter {
         arth = _arth;
         usdc = _usdc;
 
+        arth.approve(address(_pool), type(uint256).max);
+
         _transferOwnership(_treasury);
     }
 
