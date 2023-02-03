@@ -13,90 +13,96 @@ contract MasterRouter is
     VersionedInitializable,
     KeeperCompatibleInterface
 {
-    IRouter[] routers;
+    IRouter public curveRouter;
+    IRouter public arthMahaRouter;
+    IRouter public arthWethRouter;
 
-    struct RouterConfig {
-        bool paused;
-        IERC20 tokenA;
-        IERC20 tokenB;
-        uint256 tokenAmin;
-        uint256 tokenBmin;
-    }
+    IERC20 public arth;
+    IERC20 public maha;
+    IERC20 public weth;
 
-    mapping(IRouter => RouterConfig) public configs;
     address private me;
 
-    event RouterConfigSet(
-        address indexed who,
-        IRouter router,
-        RouterConfig config
-    );
-
-    event RouterToggled(address indexed who, IRouter router, bool val);
-
-    function initialize(address _treasury) external initializer {
+    function initialize(
+        address _treasury,
+        IRouter _curveRouter,
+        IRouter _arthMahaRouter,
+        IRouter _arthWethRouter,
+        IERC20 _arth,
+        IERC20 _maha,
+        IERC20 _weth
+    ) external initializer {
         _transferOwnership(_treasury);
         me = address(this);
+
+        curveRouter = _curveRouter;
+        arthMahaRouter = _arthMahaRouter;
+        arthWethRouter = _arthWethRouter;
+        arth = _arth;
+        maha = _maha;
+        weth = _weth;
+
+        // give approvals to routers
+        arth.approve(address(curveRouter), type(uint256).max);
+        arth.approve(address(arthMahaRouter), type(uint256).max);
+        arth.approve(address(arthWethRouter), type(uint256).max);
+        maha.approve(address(arthMahaRouter), type(uint256).max);
+        weth.approve(address(arthWethRouter), type(uint256).max);
     }
 
     function getRevision() public pure virtual override returns (uint256) {
         return 1;
     }
 
-    function setRouterConfig(
-        IRouter router,
-        RouterConfig memory config
-    ) external onlyOwner {
-        routers.push(router);
-        configs[router] = config;
-        emit RouterConfigSet(msg.sender, router, config);
-    }
-
-    function toggleRouter(IRouter router) external onlyOwner {
-        configs[router].paused = !configs[router].paused;
-        emit RouterToggled(msg.sender, router, configs[router].paused);
-    }
-
     function checkUpkeep(
         bytes calldata
-    )
-        external
-        view
-        override
-        returns (bool upkeepNeeded, bytes memory performData)
-    {
-        // how much routers at a time should we consider?
-        uint256 length = abi.decode(performData, (uint256));
+    ) external view override returns (bool, bytes memory) {
+        uint256 arthMahaRouterArthAmount = 0;
+        uint256 arthMahaRouterMahaAmount = 0;
+        bytes memory arthMahaData;
 
-        // prepare the return data
-        IRouter[] memory validRouters = new IRouter[](length);
-        uint256 j = 0;
+        uint256 arthWethRouterArthAmount = 0;
+        uint256 arthWethRouterWethAmount = 0;
+        bytes memory arthWethData;
 
-        for (uint i = 0; i < routers.length; i++) {
-            IRouter router = routers[i];
-            RouterConfig memory config = configs[router];
+        uint256 curveRouterArthAmount = arth.balanceOf(me);
+        bytes memory data3 = abi.encode(curveRouterArthAmount);
+        bytes memory _curveData;
+        // bool a;
+        // (a, _curveData) = curveRouter.checkUpkeep(data3);
 
-            // sanity checks
-            if (address(config.tokenA) == address(0)) continue;
-            if (config.paused) continue;
-            if (j == length) break;
-
-            // TODO; calculate how much would be spent
-            // if
-
-            // if all good, then add to results.
-            validRouters[j++] = router;
-        }
-
-        return (false, abi.encode(validRouters));
+        return (
+            false,
+            abi.encode(
+                arthMahaRouterArthAmount,
+                arthMahaRouterMahaAmount,
+                arthMahaData,
+                arthWethRouterArthAmount,
+                arthWethRouterWethAmount,
+                arthWethData,
+                curveRouterArthAmount,
+                _curveData
+            )
+        );
     }
 
     function performUpkeep(bytes calldata performData) external {
-        IRouter[] memory validRouters = abi.decode(performData, (IRouter[]));
+        (
+            bool executeArthMaha,
+            bytes memory arthMahaData,
+            bool executeArthWeth,
+            bytes memory arthWethData,
+            bool executeCurve,
+            bytes memory curveData
+        ) = abi.decode(performData, (bool, bytes, bool, bytes, bool, bytes));
 
-        // for (uint i = 0; i < validRouters.length; i++)
-        //     validRouters[i].execute();
+        // first send ARTH & MAHA to the ARTH/MAHA Router (based on MAHA collected)
+        if (executeArthMaha) arthMahaRouter.performUpkeep(arthMahaData);
 
-        emit PerformUpkeep(msg.sender, performData);
+        // second send ARTH & WETH to the ARTH/WETH Router (based on WETH collected)
+        if (executeArthWeth) arthWethRouter.performUpkeep(arthWethData);
+
+        // third send remaining ARTH to the Curve Router (based on ARTH left over)
+        if (executeCurve) arthMahaRouter.performUpkeep(curveData);
     }
 }
