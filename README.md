@@ -7,6 +7,7 @@ These contracts get funded with ETH, ARTH, USDT/C from the protocol's revenue an
 ### CurveRouter.sol
 
 Deployed address - [0xB1E961aC401A2cE5a267616C6843a3424c60b01c](https://etherscan.io/address/0xB1E961aC401A2cE5a267616C6843a3424c60b01c#code)
+
 This contract takes ARTH, adds liquidity to the ARTH/USDC curve pool and sends the LP token back to the treasury.
 
 Curve Pool - https://curve.fi/#/ethereum/pools/factory-crypto-185/deposit
