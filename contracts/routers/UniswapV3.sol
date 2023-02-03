@@ -41,16 +41,12 @@ contract UniswapV3 is Ownable, VersionedInitializable, IRouter {
         return 1;
     }
 
-    function execute(
+    function _execute(
         uint256 token0Amount,
         uint256 token1Amount,
-        bytes calldata extraData
-    ) external override {
-        (uint256 amount0Min, uint256 amount1Min) = abi.decode(
-            extraData,
-            (uint256, uint256)
-        );
-
+        uint256 amount0Min,
+        uint256 amount1Min
+    ) internal {
         // take tokens from the master router
         token0.transferFrom(msg.sender, me, token0Amount);
         token1.transferFrom(msg.sender, me, token1Amount);
@@ -67,6 +63,54 @@ contract UniswapV3 is Ownable, VersionedInitializable, IRouter {
                 });
 
         manager.increaseLiquidity(params);
+    }
+
+    function execute(
+        uint256 token0Amount,
+        uint256 token1Amount,
+        bytes calldata extraData
+    ) external override {
+        (uint256 amount0Min, uint256 amount1Min) = abi.decode(
+            extraData,
+            (uint256, uint256)
+        );
+
+        _execute(token0Amount, token1Amount, amount0Min, amount1Min);
+    }
+
+    function checkUpkeep(
+        bytes calldata checkData
+    )
+        external
+        pure
+        override
+        returns (bool upkeepNeeded, bytes memory performData)
+    {
+        if (checkData.length > 0) {
+            (uint256 token0Amount, uint256 token1Amount) = abi.decode(
+                checkData,
+                (uint256, uint256)
+            );
+
+            // uint256 minLptokens = pool.calc_token_amount([tokenArthAmount, 0]);
+            return (true, abi.encode(token0Amount, token1Amount, 0, 0));
+        }
+
+        return (
+            false,
+            abi.encode(uint256(0), uint256(0), uint256(0), uint256(0))
+        );
+    }
+
+    function performUpkeep(bytes calldata performData) external {
+        (
+            uint256 token0Amount,
+            uint256 token1Amount,
+            uint256 amount0Min,
+            uint256 amount1Min
+        ) = abi.decode(performData, (uint256, uint256, uint256, uint256));
+        _execute(token0Amount, token1Amount, amount0Min, amount1Min);
+        emit PerformUpkeep(msg.sender, performData);
     }
 
     function tokens() external view override returns (address, address) {

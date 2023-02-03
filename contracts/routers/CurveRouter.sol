@@ -61,15 +61,15 @@ contract CurveRouter is Ownable, VersionedInitializable, IRouter {
     }
 
     function checkUpkeep(
-        bytes calldata
+        bytes calldata checkData
     )
         external
         view
         override
         returns (bool upkeepNeeded, bytes memory performData)
     {
-        if (performData.length > 0) {
-            uint256 tokenArthAmount = abi.decode(performData, (uint256));
+        if (checkData.length > 0) {
+            uint256 tokenArthAmount = abi.decode(checkData, (uint256));
             uint256 minLptokens = pool.calc_token_amount([tokenArthAmount, 0]);
             return (true, abi.encode(tokenArthAmount, minLptokens));
         }
