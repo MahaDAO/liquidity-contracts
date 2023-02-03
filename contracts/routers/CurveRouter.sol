@@ -36,13 +36,7 @@ contract CurveRouter is Ownable, VersionedInitializable, IRouter {
         return 1;
     }
 
-    function execute(
-        uint256 tokenArthAmount,
-        uint256,
-        bytes calldata extraData
-    ) external override {
-        uint256 minLptokens = abi.decode(extraData, (uint256));
-
+    function _execute(uint256 tokenArthAmount, uint256 minLptokens) internal {
         // take tokens from the master router
         arth.transferFrom(msg.sender, me, tokenArthAmount);
 
@@ -53,7 +47,44 @@ contract CurveRouter is Ownable, VersionedInitializable, IRouter {
         poolToken.transfer(owner(), poolToken.balanceOf(me));
     }
 
+    function execute(
+        uint256 tokenArthAmount,
+        uint256,
+        bytes calldata extraData
+    ) external override {
+        uint256 minLptokens = abi.decode(extraData, (uint256));
+        _execute(tokenArthAmount, minLptokens);
+    }
+
     function tokens() external view override returns (address, address) {
         return (address(arth), address(usdc));
+    }
+
+    function checkUpkeep(
+        bytes calldata
+    )
+        external
+        view
+        override
+        returns (bool upkeepNeeded, bytes memory performData)
+    {
+        if (performData.length > 0) {
+            uint256 tokenArthAmount = abi.decode(performData, (uint256));
+            uint256 minLptokens = pool.calc_token_amount([tokenArthAmount, 0]);
+            return (true, abi.encode(tokenArthAmount, minLptokens));
+        }
+
+        return (false, abi.encode(uint256(0), uint256(0)));
+    }
+
+    function performUpkeep(bytes calldata performData) external {
+        (uint256 tokenArthAmount, uint256 minLptokens) = abi.decode(
+            performData,
+            (uint256, uint256)
+        );
+
+        _execute(tokenArthAmount, minLptokens);
+
+        emit PerformUpkeep(msg.sender, performData);
     }
 }
