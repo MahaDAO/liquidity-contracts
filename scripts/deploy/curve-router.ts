@@ -6,8 +6,6 @@ async function main() {
   console.log(`Deploying migrator to ${network.name}`);
 
   const [deployer] = await ethers.getSigners();
-  const gaugeProxyAdmin = "0x6357EDbfE5aDA570005ceB8FAd3139eF5A8863CC";
-
   console.log(`deployer address is ${deployer.address}`);
 
   const implementation = await deployOrLoadAndVerify(
@@ -30,7 +28,7 @@ async function main() {
 
   await deployOrLoadAndVerify(`CurveRouter`, "TransparentUpgradeableProxy", [
     implementation.address,
-    gaugeProxyAdmin,
+    config.gnosisSafe,
     initData,
   ]);
 }
