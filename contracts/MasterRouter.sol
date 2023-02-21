@@ -7,6 +7,7 @@ import {VersionedInitializable} from "./proxy/VersionedInitializable.sol";
 import {KeeperCompatibleInterface} from "./interfaces/KeeperCompatibleInterface.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {CurveRouter} from "./routers/CurveRouter.sol";
 
 contract MasterRouter is
     Ownable,
@@ -14,6 +15,9 @@ contract MasterRouter is
     KeeperCompatibleInterface
 {
     IRouter[] routers;
+    IERC20 ARTH = IERC20(0x8CC0F052fff7eaD7f2EdCCcaC895502E884a8a71);
+    IERC20 MAHA = IERC20(0x745407c86DF8DB893011912d3aB28e68B62E49B0);
+    IERC20 WETH = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
     struct RouterConfig {
         bool paused;
@@ -32,7 +36,7 @@ contract MasterRouter is
         RouterConfig config
     );
 
-    event RouterToggled(address indexed who, IRouter router, bool val);
+    event RouterToggled(address indexed who, IRouter router, bool val); 
 
     function initialize(address _treasury) external initializer {
         _transferOwnership(_treasury);
@@ -98,5 +102,13 @@ contract MasterRouter is
         //     validRouters[i].execute();
 
         emit PerformUpkeep(msg.sender, performData);
+    }
+
+    function addLiquidityToPool() external {
+        uint256 arthBalance = ARTH.balanceOf(address(this));
+        uint256 mahaBalance = MAHA.balanceOf(address(this));
+        uint256 wethBalance = WETH.balanceOf(address(this));
+
+        
     }
 }
