@@ -63,7 +63,7 @@ contract CurveRouter is Ownable, VersionedInitializable, IRouter {
     }
 
     function checkUpkeep(
-        bytes calldata checkData
+        bytes memory checkData
     )
         external
         view

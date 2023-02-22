@@ -57,31 +57,29 @@ contract MasterRouter is
     function checkUpkeep(
         bytes calldata
     ) external view override returns (bool, bytes memory) {
-        uint256 arthMahaRouterArthAmount = 0;
-        uint256 arthMahaRouterMahaAmount = 0;
-        bytes memory arthMahaData;
-
-        uint256 arthWethRouterArthAmount = 0;
-        uint256 arthWethRouterWethAmount = 0;
-        bytes memory arthWethData;
-
         uint256 curveRouterArthAmount = arth.balanceOf(me);
         bytes memory data3 = abi.encode(curveRouterArthAmount);
         bytes memory _curveData;
         // bool a;
-        // (a, _curveData) = curveRouter.checkUpkeep(data3);
+
+        bool executeArthMaha;
+        bytes memory arthMahaData;
+        bool executeArthWeth;
+        bytes memory arthWethData;
+        bool executeCurve;
+        bytes memory curveData;
+
+        (executeCurve, _curveData) = curveRouter.checkUpkeep(data3);
 
         return (
             false,
             abi.encode(
-                arthMahaRouterArthAmount,
-                arthMahaRouterMahaAmount,
+                executeArthMaha,
                 arthMahaData,
-                arthWethRouterArthAmount,
-                arthWethRouterWethAmount,
+                executeArthWeth,
                 arthWethData,
-                curveRouterArthAmount,
-                _curveData
+                executeCurve,
+                curveData
             )
         );
     }
