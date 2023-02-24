@@ -51,6 +51,9 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
         token0.approve(address(manager), type(uint256).max);
         token1.approve(address(manager), type(uint256).max);
 
+        token0.approve(address(swapRouter), type(uint256).max);
+        token1.approve(address(swapRouter), type(uint256).max);
+
         _transferOwnership(_treasury);
     }
 
@@ -64,13 +67,7 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
         uint256 amountIn_,
         uint24 fee_
     ) internal returns (uint256 amountOut) {
-        TransferHelper.safeTransferFrom(
-            tokenIn_,
-            msg.sender,
-            address(this),
-            amountIn_
-        );
-        TransferHelper.safeApprove(tokenIn_, address(swapRouter), amountIn_);
+        TransferHelper.safeTransferFrom(tokenIn_, msg.sender, me, amountIn_);
 
         // Naively set amountOutMinimum to 0. In production, use an oracle or other data source to choose a safer value for amountOutMinimum.
         // We also set the sqrtPriceLimitx96 to be 0 to ensure we swap our exact input amount.
@@ -79,7 +76,7 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
                 tokenIn: tokenIn_,
                 tokenOut: tokenOut_,
                 fee: fee_,
-                recipient: address(this),
+                recipient: me,
                 deadline: block.timestamp,
                 amountIn: amountIn_,
                 amountOutMinimum: 0,
@@ -100,14 +97,7 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
         TransferHelper.safeTransferFrom(
             tokenIn_,
             msg.sender,
-            address(this),
-            amountInMaximum
-        );
-
-        // In production, you should choose the maximum amount to spend based on oracles or other data sources to acheive a better swap.
-        TransferHelper.safeApprove(
-            tokenIn_,
-            address(swapRouter),
+            me,
             amountInMaximum
         );
 
@@ -116,7 +106,7 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
                 tokenIn: tokenIn_,
                 tokenOut: tokenOut_,
                 fee: fee_,
-                recipient: address(this),
+                recipient: me,
                 deadline: block.timestamp,
                 amountOut: amountOut_,
                 amountInMaximum: amountInMaximum,
@@ -129,7 +119,6 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
         // For exact output swaps, the amountInMaximum may not have all been spent.
         // If the actual amount spent (amountIn) is less than the specified maximum amount, we must refund the msg.sender and approve the swapRouter to spend 0.
         if (amountIn < amountInMaximum) {
-            TransferHelper.safeApprove(tokenIn_, address(swapRouter), 0);
             TransferHelper.safeTransfer(
                 tokenIn_,
                 msg.sender,
@@ -196,7 +185,7 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
                 address(token0),
                 swapAmountOut,
                 10000,
-                token1.balanceOf(address(this))
+                token1.balanceOf(me)
             );
         } else if (
             amount1ByExchangeRate < token0Amount &&
@@ -211,8 +200,8 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
             );
         }
 
-        token0Amount = token0.balanceOf(address(this));
-        token1Amount = token1.balanceOf(address(this));
+        token0Amount = token0.balanceOf(me);
+        token1Amount = token1.balanceOf(me);
         _execute(token0Amount, token1Amount, amount0Min, amount1Min);
     }
 
