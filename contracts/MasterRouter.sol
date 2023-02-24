@@ -150,26 +150,28 @@ contract MasterRouter is
         uint256 wethBalance = weth.balanceOf(me);
         uint256 arthBalance = arth.balanceOf(me);
 
-        // 50% balance of arth
+        // 50% balance of arth: token0 is ARTH and token1 is USDC
         curveRouter.execute(
             arthBalance / 2,
             0,
             abi.encode(uint256(0), uint256(0))
         );
 
-        // 25% balance of arth and rest of maha
+        // rest of maha and 50% balance of the rest arth (ideally 25% of arth): token0 is MAHA Token and token1 is ARTH Token according to the Uniswap v3 pool
+        arthBalance = arth.balanceOf(me);
         arthMahaRouter.execute(
-            arthBalance / 4,
             mahaBalance,
+            arthBalance / 2,
             abi.encode(
                 configs[arthMahaRouter].tokenAmin,
                 configs[arthMahaRouter].tokenBmin
             )
         );
 
-        // 25% balance of arth and rest of weth
+        // rest of arth (ideally 25% of initial arth balance) and rest of weth: token0 is ARTH Token and token1 is WETH Token according to the Uniswap v3 pool
+        arthBalance = arth.balanceOf(me);
         arthWethRouter.execute(
-            arthBalance / 4,
+            arthBalance,
             wethBalance,
             abi.encode(
                 configs[arthWethRouter].tokenAmin,
