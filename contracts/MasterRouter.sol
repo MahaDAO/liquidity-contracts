@@ -24,21 +24,12 @@ contract MasterRouter is
     IRouter public arthMahaRouter;
     IRouter public arthWethRouter;
 
-    IRouter[3] routers;
-
-    enum PoolIndex {
-        ARTH_USDC,
-        ARTH_MAHA,
-        ARTH_WETH
-    }
-
     struct RouterConfig {
         bool paused;
         IERC20 tokenA;
         IERC20 tokenB;
         uint256 tokenAmin;
         uint256 tokenBmin;
-        PoolIndex index;
     }
 
     mapping(IRouter => RouterConfig) public configs;
@@ -89,7 +80,6 @@ contract MasterRouter is
         IRouter router,
         RouterConfig memory config
     ) external onlyOwner {
-        routers[uint256(config.index)] = IRouter(router);
         configs[router] = config;
         emit RouterConfigSet(msg.sender, address(router), config);
     }
@@ -114,21 +104,21 @@ contract MasterRouter is
         IRouter[] memory validRouters = new IRouter[](length);
         uint256 j = 0;
 
-        for (uint i = 0; i < routers.length; i++) {
-            IRouter router = routers[i];
-            RouterConfig memory config = configs[router];
+        // for (uint i = 0; i < routers.length; i++) {
+        //     IRouter router = routers[i];
+        //     RouterConfig memory config = configs[router];
 
-            // sanity checks
-            if (address(config.tokenA) == address(0)) continue;
-            if (config.paused) continue;
-            if (j == length) break;
+        //     // sanity checks
+        //     if (address(config.tokenA) == address(0)) continue;
+        //     if (config.paused) continue;
+        //     if (j == length) break;
 
-            // TODO; calculate how much would be spent
-            // if
+        //     // TODO; calculate how much would be spent
+        //     // if
 
-            // if all good, then add to results.
-            validRouters[j++] = IRouter(router);
-        }
+        //     // if all good, then add to results.
+        //     validRouters[j++] = IRouter(router);
+        // }
 
         return (false, abi.encode(validRouters));
     }
