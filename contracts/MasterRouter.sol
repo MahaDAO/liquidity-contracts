@@ -22,6 +22,7 @@ contract MasterRouter is
 
     IRouter public curveRouter;
     IRouter public arthMahaRouter;
+    IRouter public mahaWethRouter;
     IRouter public arthWethRouter;
 
     struct RouterConfig {
@@ -63,10 +64,15 @@ contract MasterRouter is
 
         // give approvals to routers
         arth.approve(address(curveRouter), type(uint256).max);
+
         arth.approve(address(arthMahaRouter), type(uint256).max);
-        arth.approve(address(arthWethRouter), type(uint256).max);
         maha.approve(address(arthMahaRouter), type(uint256).max);
+
+        arth.approve(address(arthWethRouter), type(uint256).max);
         weth.approve(address(arthWethRouter), type(uint256).max);
+
+        maha.approve(address(arthMahaRouter), type(uint256).max);
+        weth.approve(address(arthMahaRouter), type(uint256).max);
     }
 
     function getRevision() public pure virtual override returns (uint256) {
@@ -93,7 +99,7 @@ contract MasterRouter is
         bytes calldata
     )
         external
-        view
+        pure
         override
         returns (bool upkeepNeeded, bytes memory performData)
     {
@@ -102,7 +108,7 @@ contract MasterRouter is
 
         // prepare the return data
         IRouter[] memory validRouters = new IRouter[](length);
-        uint256 j = 0;
+        // uint256 j = 0;
 
         // for (uint i = 0; i < routers.length; i++) {
         //     IRouter router = routers[i];
@@ -150,33 +156,37 @@ contract MasterRouter is
         uint256 wethBalance = weth.balanceOf(me);
         uint256 arthBalance = arth.balanceOf(me);
 
-        // 50% balance of arth: token0 is ARTH and token1 is USDC
-        curveRouter.execute(
-            arthBalance / 2,
-            0,
-            abi.encode(uint256(0), uint256(0))
-        );
+        // 100% of arth: token0 is ARTH and token1 is USDC
+        curveRouter.execute(arthBalance, 0, abi.encode(uint256(0), uint256(0)));
 
-        // rest of maha and 50% balance of the rest arth (ideally 25% of arth): token0 is MAHA Token and token1 is ARTH Token according to the Uniswap v3 pool
-        arthBalance = arth.balanceOf(me);
+        // 100% of maha; token0 is MAHA Token and token1 is ARTH Token according to the Uniswap v3 pool
         arthMahaRouter.execute(
             mahaBalance,
-            arthBalance / 2,
+            0,
             abi.encode(
                 configs[arthMahaRouter].tokenAmin,
                 configs[arthMahaRouter].tokenBmin
             )
         );
 
-        // rest of arth (ideally 25% of initial arth balance) and rest of weth: token0 is ARTH Token and token1 is WETH Token according to the Uniswap v3 pool
-        arthBalance = arth.balanceOf(me);
-        arthWethRouter.execute(
-            arthBalance,
+        // 100% of weth; token0 is MAHA Token and token1 is WETH Token according to the Uniswap v3 pool
+        mahaWethRouter.execute(
+            0,
             wethBalance,
             abi.encode(
-                configs[arthWethRouter].tokenAmin,
-                configs[arthWethRouter].tokenBmin
+                configs[mahaWethRouter].tokenAmin,
+                configs[mahaWethRouter].tokenBmin
             )
         );
+
+        // // 100% of weth; token0 is ARTH Token and token1 is WETH Token according to the Uniswap v3 pool
+        // arthMahaRouter.execute(
+        //     0,
+        //     wethBalance,
+        //     abi.encode(
+        //         configs[arthMahaRouter].tokenAmin,
+        //         configs[arthMahaRouter].tokenBmin
+        //     )
+        // );
     }
 }

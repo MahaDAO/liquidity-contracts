@@ -10,8 +10,8 @@ import {ICurveCryptoV2} from "../interfaces/ICurveCryptoV2.sol";
 import {IUniswapV3Pool} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import {IUniswapV3Factory} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import '@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol';
-import '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol';
+import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
+import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 
 // collect tokens and use it to add liquidity to ARTH/ETH and ARTH/MAHA LP pairs.
 contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
@@ -22,8 +22,10 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
     uint256 public poolId;
     IERC20 public token0;
     IERC20 public token1;
-    IUniswapV3Factory public factory = IUniswapV3Factory(0x1F98431c8aD98523631AE4a59f267346ea31F984);
-    ISwapRouter public swapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
+    IUniswapV3Factory public factory =
+        IUniswapV3Factory(0x1F98431c8aD98523631AE4a59f267346ea31F984);
+    ISwapRouter public swapRouter =
+        ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
     IUniswapV3Pool public pool;
 
     function initialize(
@@ -56,14 +58,24 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
         return 1;
     }
 
-    function _swapExactInputSingle(address tokenIn_, address tokenOut_, uint256 amountIn_, uint24 fee_) internal returns (uint256 amountOut) {
-        TransferHelper.safeTransferFrom(tokenIn_, msg.sender, address(this), amountIn_);
+    function _swapExactInputSingle(
+        address tokenIn_,
+        address tokenOut_,
+        uint256 amountIn_,
+        uint24 fee_
+    ) internal returns (uint256 amountOut) {
+        TransferHelper.safeTransferFrom(
+            tokenIn_,
+            msg.sender,
+            address(this),
+            amountIn_
+        );
         TransferHelper.safeApprove(tokenIn_, address(swapRouter), amountIn_);
 
         // Naively set amountOutMinimum to 0. In production, use an oracle or other data source to choose a safer value for amountOutMinimum.
         // We also set the sqrtPriceLimitx96 to be 0 to ensure we swap our exact input amount.
-        ISwapRouter.ExactInputSingleParams memory params =
-            ISwapRouter.ExactInputSingleParams({
+        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
+            .ExactInputSingleParams({
                 tokenIn: tokenIn_,
                 tokenOut: tokenOut_,
                 fee: fee_,
@@ -78,14 +90,29 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
         amountOut = swapRouter.exactInputSingle(params);
     }
 
-    function _swapExactOutputSingle(address tokenIn_, address tokenOut_, uint256 amountOut_, uint24 fee_, uint256 amountInMaximum) internal returns (uint256 amountIn) {
-        TransferHelper.safeTransferFrom(tokenIn_, msg.sender, address(this), amountInMaximum);
+    function _swapExactOutputSingle(
+        address tokenIn_,
+        address tokenOut_,
+        uint256 amountOut_,
+        uint24 fee_,
+        uint256 amountInMaximum
+    ) internal returns (uint256 amountIn) {
+        TransferHelper.safeTransferFrom(
+            tokenIn_,
+            msg.sender,
+            address(this),
+            amountInMaximum
+        );
 
         // In production, you should choose the maximum amount to spend based on oracles or other data sources to acheive a better swap.
-        TransferHelper.safeApprove(tokenIn_, address(swapRouter), amountInMaximum);
+        TransferHelper.safeApprove(
+            tokenIn_,
+            address(swapRouter),
+            amountInMaximum
+        );
 
-        ISwapRouter.ExactOutputSingleParams memory params =
-            ISwapRouter.ExactOutputSingleParams({
+        ISwapRouter.ExactOutputSingleParams memory params = ISwapRouter
+            .ExactOutputSingleParams({
                 tokenIn: tokenIn_,
                 tokenOut: tokenOut_,
                 fee: fee_,
@@ -103,7 +130,11 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
         // If the actual amount spent (amountIn) is less than the specified maximum amount, we must refund the msg.sender and approve the swapRouter to spend 0.
         if (amountIn < amountInMaximum) {
             TransferHelper.safeApprove(tokenIn_, address(swapRouter), 0);
-            TransferHelper.safeTransfer(tokenIn_, msg.sender, amountInMaximum - amountIn);
+            TransferHelper.safeTransfer(
+                tokenIn_,
+                msg.sender,
+                amountInMaximum - amountIn
+            );
         }
     }
 
@@ -134,7 +165,10 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
     function _getPrice() internal view returns (uint256 price) {
         (uint160 sqrtPriceX96, , , , , , ) = pool.slot0();
         assembly {
-            price := shr(192, mul(mul(sqrtPriceX96, sqrtPriceX96), 1000000000000000000))
+            price := shr(
+                192,
+                mul(mul(sqrtPriceX96, sqrtPriceX96), 1000000000000000000)
+            )
         }
     }
 
@@ -149,15 +183,32 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
         );
 
         uint256 price = _getPrice();
-        uint256 amount1ByExchangeRate = token1Amount * price / 1e18;
+        uint256 amount1ByExchangeRate = (token1Amount * price) / 1e18;
 
         // that means amount1 is more than amount0 so need to swap token1 to token0
-        if (amount1ByExchangeRate > token0Amount && amount1ByExchangeRate - token0Amount > 2 * 1e18) {
+        if (
+            amount1ByExchangeRate > token0Amount &&
+            amount1ByExchangeRate - token0Amount > 2 * 1e18
+        ) {
             uint256 swapAmountOut = (amount1ByExchangeRate - token0Amount) / 2;
-            _swapExactOutputSingle(address(token1), address(token0), swapAmountOut, 10000, token1.balanceOf(address(this)));
-        } else if (amount1ByExchangeRate < token0Amount && token0Amount - amount1ByExchangeRate > 2 * 1e18) {
+            _swapExactOutputSingle(
+                address(token1),
+                address(token0),
+                swapAmountOut,
+                10000,
+                token1.balanceOf(address(this))
+            );
+        } else if (
+            amount1ByExchangeRate < token0Amount &&
+            token0Amount - amount1ByExchangeRate > 2 * 1e18
+        ) {
             uint256 swapAmountIn = (token0Amount - amount1ByExchangeRate) / 2;
-            _swapExactInputSingle(address(token0), address(token1), swapAmountIn, 10000);
+            _swapExactInputSingle(
+                address(token0),
+                address(token1),
+                swapAmountIn,
+                10000
+            );
         }
 
         token0Amount = token0.balanceOf(address(this));
