@@ -13,6 +13,8 @@ import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import {TransferHelper} from "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 
+// import "hardhat/console.sol";
+
 // collect tokens and use it to add liquidity to ARTH/ETH and ARTH/MAHA LP pairs.
 contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
     using SafeMath for uint256;
@@ -23,32 +25,26 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
     IERC20 public token0;
     IERC20 public token1;
 
-    // uniswap factory
-    IUniswapV3Factory public factory =
-        IUniswapV3Factory(0x1F98431c8aD98523631AE4a59f267346ea31F984);
-
     // uniswap swap router
-    ISwapRouter public swapRouter =
-        ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
+    ISwapRouter public swapRouter;
 
+    /// @dev uniswap pool
     IUniswapV3Pool public pool;
 
     function initialize(
         address _treasury,
         INonfungiblePositionManager _manager,
-        uint256 _poolId,
-        IERC20 _token0,
-        IERC20 _token1,
-        uint24 _fee
+        IUniswapV3Pool _pool,
+        ISwapRouter _swapRouter,
+        uint256 _poolId
     ) external initializer {
         me = address(this);
 
         manager = _manager;
         poolId = _poolId;
 
-        pool = IUniswapV3Pool(
-            factory.getPool(address(_token0), address(_token1), _fee)
-        );
+        swapRouter = ISwapRouter(_swapRouter);
+        pool = IUniswapV3Pool(_pool);
 
         token0 = IERC20(pool.token0());
         token1 = IERC20(pool.token1());

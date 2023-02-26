@@ -5,7 +5,7 @@ import { deployOrLoadAndVerify } from "../utils";
 async function main() {
   console.log("deploy router for maha/weth pool");
 
-  const nftManagerAddr = "0xc36442b4a4522e871399cd717abdd847ab11fe88";
+  const poolAddress = "0xb28ddf1ee8ee014eafbecd8de979ac8d297931c7";
   const nftId = 447449;
 
   const [deployer] = await ethers.getSigners();
@@ -20,11 +20,10 @@ async function main() {
   const UniswapV3Router = await ethers.getContractFactory("UniswapV3Router");
   const initData = UniswapV3Router.interface.encodeFunctionData("initialize", [
     config.gnosisSafe, // address _treasury,
-    nftManagerAddr, // INonfungiblePositionManager _manager,
-    nftId, // uint256 _poolId,
-    config.mahaAddr, // IERC20 _token0,
-    config.wethAddr, // IERC20 _token1,
-    10000, // uint24 _fee
+    config.uniswapNFTPositionMangerAddr, // INonfungiblePositionManager _manager,
+    poolAddress, // IUniswapV3Pool _pool,
+    config.uniswapSwapRouter, // ISwapRouter _swapRouter,
+    nftId, // uint256 _poolId
   ]);
 
   await deployOrLoadAndVerify(

@@ -8,5 +8,10 @@
     "abi": "TransparentUpgradeableProxy",
     "verified": true,
     "address": "0xB1E961aC401A2cE5a267616C6843a3424c60b01c"
+  },
+  "UniswapV3Router-Impl": {
+    "abi": "UniswapV3Router",
+    "verified": true,
+    "address": "0x5b1741715e5334349dca0eEa09c409271B5811Fb"
   }
 }

@@ -10,15 +10,10 @@ async function main() {
   await helpers.setBalance(address, "0x56BC75E2D63100000"); // give it some ETH balance
 
   const whale = await ethers.getSigner(address);
-
-  const nftManagerAddr = "0xc36442b4a4522e871399cd717abdd847ab11fe88";
-  const poolAddress = "0xb28ddf1ee8ee014eafbecd8de979ac8d297931c7";
-  const nftManager = await ethers.getContractAt(
-    "INonfungiblePositionManager",
-    nftManagerAddr
-  );
-  const nftId = 447449;
   const e18 = BigNumber.from(10).pow(18);
+
+  const poolAddress = "0xb28ddf1ee8ee014eafbecd8de979ac8d297931c7";
+  const nftId = 447449;
 
   console.log("deploy router for maha/weth pool");
   const UniswapV3Router = await ethers.getContractFactory("UniswapV3Router");
@@ -32,11 +27,10 @@ async function main() {
   console.log("init");
   await instance.initialize(
     config.gnosisSafe, // address _treasury,
-    nftManager.address, // INonfungiblePositionManager _manager,
-    nftId, // uint256 _poolId,
-    config.mahaAddr, // IERC20 _token0,
-    config.wethAddr, // IERC20 _token1,
-    10000 // uint24 _fee
+    config.uniswapNFTPositionMangerAddr, // INonfungiblePositionManager _manager,
+    poolAddress, // IUniswapV3Pool _pool,
+    config.uniswapSwapRouter, // ISwapRouter _swapRouter,
+    nftId // uint256 _poolId
   );
 
   const weth = await ethers.getContractAt("IWETH", config.wethAddr);

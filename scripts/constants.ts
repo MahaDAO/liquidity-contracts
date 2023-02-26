@@ -17,3 +17,5 @@ export const lendingPool = "0x76F0C94Ced5B48020bf0D7f3D0CEabC877744cB5";
 export const gnosisSafe = "0x6357EDbfE5aDA570005ceB8FAd3139eF5A8863CC";
 export const gnosisProxy = "0x6357EDbfE5aDA570005ceB8FAd3139eF5A8863CC";
 export const enamakel = "0x2B6D96826dfBC212aeAb6748ca10d71039A518f0";
+
+export const uniswapSwapRouter = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
