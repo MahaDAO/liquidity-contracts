@@ -5,7 +5,7 @@ import { BigNumber } from "ethers";
 
 async function main() {
   // impersonate MAHA whale
-  const address = "0x6357EDbfE5aDA570005ceB8FAd3139eF5A8863CC";
+  const address = "0x77cd66d59ac48a0E7CE54fF16D9235a5fffF335E";
   await helpers.impersonateAccount(address);
   await helpers.setBalance(address, "0x56BC75E2D63100000"); // give it some ETH balance
 
@@ -24,10 +24,10 @@ async function main() {
   const UniswapV3Router = await ethers.getContractFactory("UniswapV3Router");
   const instance = await UniswapV3Router.deploy();
 
-  console.log("sending nft to contract");
-  await nftManager
-    .connect(whale)
-    .transferFrom(whale.address, instance.address, nftId);
+  // console.log("sending nft to contract");
+  // await nftManager
+  //   .connect(whale)
+  //   .transferFrom(whale.address, instance.address, nftId);
 
   console.log("init");
   await instance.initialize(

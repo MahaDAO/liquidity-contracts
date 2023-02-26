@@ -89,7 +89,7 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
             _swapExactInputSingle(
                 address(token1),
                 address(token0),
-                token1Amount / 2,
+                token1Amount / 2, // TODO: need to calculate this to understand how much we should efficiently swap
                 10000
             );
 
@@ -98,7 +98,7 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
         }
 
         // attempt to add liquidity
-        _execute(token0Amount, token1Amount, amount0Min, amount1Min);
+        _addLiquidity(token0Amount, token1Amount, amount0Min, amount1Min);
 
         // send balance back to the contract
         _flush(msg.sender);
@@ -139,7 +139,7 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
         if (token0Amount > 0) token0.transferFrom(msg.sender, me, token0Amount);
         if (token1Amount > 0) token1.transferFrom(msg.sender, me, token1Amount);
 
-        _execute(token0Amount, token1Amount, amount0Min, amount1Min);
+        _addLiquidity(token0Amount, token1Amount, amount0Min, amount1Min);
         _flush(owner());
 
         emit PerformUpkeep(msg.sender, performData);
@@ -157,6 +157,7 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
         poolId = nftId;
     }
 
+    /// @dev swaps two tokens
     function _swapExactInputSingle(
         address tokenIn_,
         address tokenOut_,
@@ -181,7 +182,8 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
         amountOut = swapRouter.exactInputSingle(params);
     }
 
-    function _execute(
+    /// @dev adds liquidity to the nft id
+    function _addLiquidity(
         uint256 token0Amount,
         uint256 token1Amount,
         uint256 amount0Min,
@@ -201,6 +203,7 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
         manager.increaseLiquidity(params);
     }
 
+    /// @dev gets price from uniswap
     function _getPrice() internal view returns (uint256 price) {
         (uint160 sqrtPriceX96, , , , , , ) = pool.slot0();
         assembly {
@@ -211,6 +214,7 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
         }
     }
 
+    /// @dev send balance tokens back to user
     function _flush(address to) internal {
         uint256 token0Amount = token0.balanceOf(me);
         uint256 token1Amount = token1.balanceOf(me);
