@@ -22,10 +22,6 @@ contract MasterRouter is
 
     address private me;
 
-    IRouter public curveRouter;
-    IRouter public mahaWethRouter;
-    IRouter public arthMahaRouter;
-
     mapping(IERC20 => IRouter) public routers;
     mapping(IERC20 => uint256) public routerMinimum;
 
@@ -143,7 +139,7 @@ contract MasterRouter is
 
         // token0 is ARTH and token1 is USDC according to the curve pool
         if (arthBalance > 0)
-            curveRouter.execute(
+            routers[arth].execute(
                 arthBalance,
                 0,
                 abi.encode(uint256(0), uint256(0))
@@ -156,7 +152,7 @@ contract MasterRouter is
 
         // token0 is MAHA Token and token1 is ARTH Token according to the Uniswap v3 pool
         if (mahaBalance > 0)
-            arthMahaRouter.execute(
+            routers[maha].execute(
                 mahaBalance,
                 0,
                 abi.encode(uint256(0), uint256(0))
@@ -169,7 +165,7 @@ contract MasterRouter is
 
         // token0 is MAHA Token and token1 is WETH Token according to the Uniswap v3 pool
         if (wethBalance > 0)
-            mahaWethRouter.execute(
+            routers[weth].execute(
                 0,
                 wethBalance,
                 abi.encode(uint256(0), uint256(0))

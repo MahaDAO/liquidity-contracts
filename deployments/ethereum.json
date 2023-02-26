@@ -21,7 +21,12 @@
   },
   "MasterRouter-Impl": {
     "abi": "MasterRouter",
-    "verified": false,
+    "verified": true,
     "address": "0x361ec649B3315483e4235d0E1E51be7ced6Ab82D"
+  },
+  "MasterRouter": {
+    "abi": "TransparentUpgradeableProxy",
+    "verified": true,
+    "address": "0x8bE9cbbDfEeAF1dCAcfb608105eC27384b6Ff628"
   }
 }

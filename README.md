@@ -16,6 +16,8 @@ Treasury - [0x6357EDbfE5aDA570005ceB8FAd3139eF5A8863CC](https://etherscan.io/add
 
 ### MasterRouter.sol
 
+Deployed Address [0x8bE9cbbDfEeAF1dCAcfb608105eC27384b6Ff628](https://etherscan.io/address/0x8be9cbbdfeeaf1dcacfb608105ec27384b6ff628)
+
 This is the master contract where all the revenue gets collected. From here on, tokens gets split and sent to all the different routers below.
 
 ### CurveRouter.sol
