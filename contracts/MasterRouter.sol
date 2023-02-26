@@ -97,15 +97,15 @@ contract MasterRouter is
         (
             bool _executeArthMaha,
             bytes memory _arthMahaData,
-            bool _executeArthWeth,
-            bytes memory _arthWethData,
+            bool _executeMahaWeth,
+            bytes memory _mahaWethData,
             bool _executeCurve,
             bytes memory _curveData
         ) = abi.decode(performData, (bool, bytes, bool, bytes, bool, bytes));
 
         if (_executeArthMaha) arthMahaRouter.performUpkeep(_arthMahaData);
-        if (_executeArthWeth) arthWethRouter.performUpkeep(_arthWethData);
-        if (_executeCurve) arthMahaRouter.performUpkeep(_curveData);
+        if (_executeMahaWeth) mahaWethRouter.performUpkeep(_mahaWethData);
+        if (_executeCurve) curveRouter.performUpkeep(_curveData);
     }
 
     /// @dev helper function to get add liquidty to all the pools in one go.
