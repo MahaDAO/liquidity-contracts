@@ -22,10 +22,15 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
     uint256 public poolId;
     IERC20 public token0;
     IERC20 public token1;
+
+    // uniswap factory
     IUniswapV3Factory public factory =
         IUniswapV3Factory(0x1F98431c8aD98523631AE4a59f267346ea31F984);
+
+    // uniswap swap router
     ISwapRouter public swapRouter =
         ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
+
     IUniswapV3Pool public pool;
 
     function initialize(
@@ -61,111 +66,15 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
         return 1;
     }
 
-    function _swapExactInputSingle(
-        address tokenIn_,
-        address tokenOut_,
-        uint256 amountIn_,
-        uint24 fee_
-    ) internal returns (uint256 amountOut) {
-        TransferHelper.safeTransferFrom(tokenIn_, msg.sender, me, amountIn_);
-
-        // Naively set amountOutMinimum to 0. In production, use an oracle or other data source to choose a safer value for amountOutMinimum.
-        // We also set the sqrtPriceLimitx96 to be 0 to ensure we swap our exact input amount.
-        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
-            .ExactInputSingleParams({
-                tokenIn: tokenIn_,
-                tokenOut: tokenOut_,
-                fee: fee_,
-                recipient: me,
-                deadline: block.timestamp,
-                amountIn: amountIn_,
-                amountOutMinimum: 0,
-                sqrtPriceLimitX96: 0
-            });
-
-        // The call to `exactInputSingle` executes the swap.
-        amountOut = swapRouter.exactInputSingle(params);
-    }
-
-    function _swapExactOutputSingle(
-        address tokenIn_,
-        address tokenOut_,
-        uint256 amountOut_,
-        uint24 fee_,
-        uint256 amountInMaximum
-    ) internal returns (uint256 amountIn) {
-        TransferHelper.safeTransferFrom(
-            tokenIn_,
-            msg.sender,
-            me,
-            amountInMaximum
-        );
-
-        ISwapRouter.ExactOutputSingleParams memory params = ISwapRouter
-            .ExactOutputSingleParams({
-                tokenIn: tokenIn_,
-                tokenOut: tokenOut_,
-                fee: fee_,
-                recipient: me,
-                deadline: block.timestamp,
-                amountOut: amountOut_,
-                amountInMaximum: amountInMaximum,
-                sqrtPriceLimitX96: 0
-            });
-
-        // Executes the swap returning the amountIn needed to spend to receive the desired amountOut.
-        amountIn = swapRouter.exactOutputSingle(params);
-
-        // For exact output swaps, the amountInMaximum may not have all been spent.
-        // If the actual amount spent (amountIn) is less than the specified maximum amount, we must refund the msg.sender and approve the swapRouter to spend 0.
-        if (amountIn < amountInMaximum) {
-            TransferHelper.safeTransfer(
-                tokenIn_,
-                msg.sender,
-                amountInMaximum - amountIn
-            );
-        }
-    }
-
-    function _execute(
-        uint256 token0Amount,
-        uint256 token1Amount,
-        uint256 amount0Min,
-        uint256 amount1Min
-    ) internal {
-        // take tokens from the master router
-        token0.transferFrom(msg.sender, me, token0Amount);
-        token1.transferFrom(msg.sender, me, token1Amount);
-
-        INonfungiblePositionManager.IncreaseLiquidityParams
-            memory params = INonfungiblePositionManager
-                .IncreaseLiquidityParams({
-                    tokenId: poolId,
-                    amount0Desired: token0Amount,
-                    amount1Desired: token1Amount,
-                    amount0Min: amount0Min,
-                    amount1Min: amount1Min,
-                    deadline: block.timestamp
-                });
-
-        manager.increaseLiquidity(params);
-    }
-
-    function _getPrice() internal view returns (uint256 price) {
-        (uint160 sqrtPriceX96, , , , , , ) = pool.slot0();
-        assembly {
-            price := shr(
-                192,
-                mul(mul(sqrtPriceX96, sqrtPriceX96), 1000000000000000000)
-            )
-        }
-    }
-
     function execute(
         uint256 token0Amount,
         uint256 token1Amount,
         bytes calldata extraData
     ) external override {
+        // take tokens from the user
+        if (token0Amount > 0) token0.transferFrom(msg.sender, me, token0Amount);
+        if (token1Amount > 0) token1.transferFrom(msg.sender, me, token1Amount);
+
         (uint256 amount0Min, uint256 amount1Min) = abi.decode(
             extraData,
             (uint256, uint256)
@@ -174,35 +83,25 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
         uint256 price = _getPrice();
         uint256 amount1ByExchangeRate = (token1Amount * price) / 1e18;
 
-        // that means amount1 is more than amount0 so need to swap token1 to token0
-        if (
-            amount1ByExchangeRate > token0Amount &&
-            amount1ByExchangeRate - token0Amount > 2 * 1e18
-        ) {
-            uint256 swapAmountOut = (amount1ByExchangeRate - token0Amount) / 2;
-            _swapExactOutputSingle(
-                address(token1),
-                address(token0),
-                swapAmountOut,
-                10000,
-                token1.balanceOf(me)
-            );
-        } else if (
-            amount1ByExchangeRate < token0Amount &&
-            token0Amount - amount1ByExchangeRate > 2 * 1e18
-        ) {
-            uint256 swapAmountIn = (token0Amount - amount1ByExchangeRate) / 2;
+        // in most cases we are only feeding the contract with ETH, so we feed in
+        // half for maha
+        if (amount1ByExchangeRate > token0Amount) {
             _swapExactInputSingle(
-                address(token0),
                 address(token1),
-                swapAmountIn,
+                address(token0),
+                token1Amount / 2,
                 10000
             );
+
+            token0Amount = token0.balanceOf(me);
+            token1Amount = token1.balanceOf(me);
         }
 
-        token0Amount = token0.balanceOf(me);
-        token1Amount = token1.balanceOf(me);
+        // attempt to add liquidity
         _execute(token0Amount, token1Amount, amount0Min, amount1Min);
+
+        // send balance back to the contract
+        _flush(msg.sender);
     }
 
     function checkUpkeep(
@@ -236,7 +135,13 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
             uint256 amount0Min,
             uint256 amount1Min
         ) = abi.decode(performData, (uint256, uint256, uint256, uint256));
+
+        if (token0Amount > 0) token0.transferFrom(msg.sender, me, token0Amount);
+        if (token1Amount > 0) token1.transferFrom(msg.sender, me, token1Amount);
+
         _execute(token0Amount, token1Amount, amount0Min, amount1Min);
+        _flush(owner());
+
         emit PerformUpkeep(msg.sender, performData);
     }
 
@@ -250,5 +155,66 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
 
     function setPoolId(uint256 nftId) external onlyOwner {
         poolId = nftId;
+    }
+
+    function _swapExactInputSingle(
+        address tokenIn_,
+        address tokenOut_,
+        uint256 amountIn_,
+        uint24 fee_
+    ) internal returns (uint256 amountOut) {
+        // Naively set amountOutMinimum to 0. In production, use an oracle or other data source to choose a safer value for amountOutMinimum.
+        // We also set the sqrtPriceLimitx96 to be 0 to ensure we swap our exact input amount.
+        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
+            .ExactInputSingleParams({
+                tokenIn: tokenIn_,
+                tokenOut: tokenOut_,
+                fee: fee_,
+                recipient: me,
+                deadline: block.timestamp,
+                amountIn: amountIn_,
+                amountOutMinimum: 0,
+                sqrtPriceLimitX96: 0
+            });
+
+        // The call to `exactInputSingle` executes the swap.
+        amountOut = swapRouter.exactInputSingle(params);
+    }
+
+    function _execute(
+        uint256 token0Amount,
+        uint256 token1Amount,
+        uint256 amount0Min,
+        uint256 amount1Min
+    ) internal {
+        INonfungiblePositionManager.IncreaseLiquidityParams
+            memory params = INonfungiblePositionManager
+                .IncreaseLiquidityParams({
+                    tokenId: poolId,
+                    amount0Desired: token0Amount,
+                    amount1Desired: token1Amount,
+                    amount0Min: amount0Min,
+                    amount1Min: amount1Min,
+                    deadline: block.timestamp
+                });
+
+        manager.increaseLiquidity(params);
+    }
+
+    function _getPrice() internal view returns (uint256 price) {
+        (uint160 sqrtPriceX96, , , , , , ) = pool.slot0();
+        assembly {
+            price := shr(
+                192,
+                mul(mul(sqrtPriceX96, sqrtPriceX96), 1000000000000000000)
+            )
+        }
+    }
+
+    function _flush(address to) internal {
+        uint256 token0Amount = token0.balanceOf(me);
+        uint256 token1Amount = token1.balanceOf(me);
+        if (token0Amount > 0) token0.transferFrom(to, me, token0Amount);
+        if (token1Amount > 0) token1.transferFrom(to, me, token1Amount);
     }
 }
