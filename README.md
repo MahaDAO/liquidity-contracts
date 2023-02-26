@@ -1,6 +1,6 @@
 # ARTH Liquidity Contracts
 
-These contracts focus on growing liquidity for the entier ARTH protocol from the protocol's revenue.
+These contracts focus on growing liquidity for the entire ARTH protocol from the protocol's revenue in an automated way.
 
 ![Liquidity Router](./router.png "Liquidity Router flow")
 
@@ -16,7 +16,7 @@ Treasury - [0x6357EDbfE5aDA570005ceB8FAd3139eF5A8863CC](https://etherscan.io/add
 
 ### MasterRouter.sol
 
-This is the master contract that collects all the revenue and fees earned from the protocol and distributes it to the various routers.
+This is the master contract where all the revenue gets collected. From here on, the revenue gets sent to all the different routers to get added as liquidity.
 
 ### CurveRouter.sol
 
