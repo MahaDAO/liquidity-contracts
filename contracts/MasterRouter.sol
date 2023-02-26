@@ -61,36 +61,30 @@ contract MasterRouter is
         bytes calldata
     )
         external
-        pure
+        view
         override
         returns (bool upkeepNeeded, bytes memory performData)
     {
-        // how much routers at a time should we consider?
-        uint256 length = abi.decode(performData, (uint256));
+        bool _executeArthMaha;
+        bool _executeMahaWeth;
+        bool _executeCurve;
 
-        // prepare the return data
-        IRouter[] memory validRouters = new IRouter[](length);
-        // uint256 j = 0;
+        bytes memory dummyData = abi.encode(uint256(0), uint256(0));
 
-        // TODO; need to write some checks and balances
+        _executeCurve = arth.balanceOf(me) > 0;
+        _executeMahaWeth = weth.balanceOf(me) > 0;
+        _executeArthMaha = maha.balanceOf(me) > 0;
 
-        // for (uint i = 0; i < routers.length; i++) {
-        //     IRouter router = routers[i];
-        //     RouterConfig memory config = configs[router];
+        performData = abi.encode(
+            _executeArthMaha,
+            dummyData,
+            _executeMahaWeth,
+            dummyData,
+            _executeCurve,
+            dummyData
+        );
 
-        //     // sanity checks
-        //     if (address(config.tokenA) == address(0)) continue;
-        //     if (config.paused) continue;
-        //     if (j == length) break;
-
-        //     // TODO; calculate how much would be spent
-        //     // if
-
-        //     // if all good, then add to results.
-        //     validRouters[j++] = IRouter(router);
-        // }
-
-        return (false, abi.encode(validRouters));
+        upkeepNeeded = _executeArthMaha || _executeMahaWeth || _executeCurve;
     }
 
     function performUpkeep(bytes calldata performData) external {
