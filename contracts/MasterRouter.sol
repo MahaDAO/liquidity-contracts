@@ -24,15 +24,22 @@ contract MasterRouter is
     IRouter public mahaWethRouter;
     IRouter public arthMahaRouter;
 
+    mapping(IERC20 => IRouter) public routers;
+    mapping(IERC20 => uint256) public routerMinimum;
+
+    event RegisterRouter(
+        address who,
+        IERC20 _token,
+        IRouter _router,
+        uint256 minNeeded
+    );
+
     receive() external payable {
         weth.deposit{value: msg.value}();
     }
 
     function initialize(
         address _treasury,
-        IRouter _curveRouter,
-        IRouter _arthMahaRouter,
-        IRouter _mahaWethRouter,
         IERC20 _arth,
         IERC20 _maha,
         IWETH _weth
@@ -40,21 +47,26 @@ contract MasterRouter is
         _transferOwnership(_treasury);
         me = address(this);
 
-        curveRouter = _curveRouter;
-        arthMahaRouter = _arthMahaRouter;
-        mahaWethRouter = _mahaWethRouter;
         arth = _arth;
         maha = _maha;
         weth = _weth;
-
-        // give approvals to routers
-        arth.approve(address(curveRouter), type(uint256).max);
-        maha.approve(address(arthMahaRouter), type(uint256).max);
-        weth.approve(address(mahaWethRouter), type(uint256).max);
     }
 
     function getRevision() public pure virtual override returns (uint256) {
         return 1;
+    }
+
+    function registerRouter(
+        IERC20 _token,
+        IRouter _router,
+        uint256 minNeeded
+    ) external onlyOwner {
+        routerMinimum[_token] = minNeeded;
+        routers[_token] = _router;
+
+        _token.approve(address(_router), type(uint256).max);
+
+        emit RegisterRouter(msg.sender, _token, _router, minNeeded);
     }
 
     function checkUpkeep(
@@ -65,41 +77,41 @@ contract MasterRouter is
         override
         returns (bool upkeepNeeded, bytes memory performData)
     {
-        bool _executeArthMaha;
-        bool _executeMahaWeth;
-        bool _executeCurve;
+        bool _executeMaha;
+        bool _executeWeth;
+        bool _executeArth;
 
         bytes memory dummyData = abi.encode(uint256(0), uint256(0));
 
-        _executeCurve = arth.balanceOf(me) > 0;
-        _executeMahaWeth = weth.balanceOf(me) > 0;
-        _executeArthMaha = maha.balanceOf(me) > 0;
+        _executeArth = arth.balanceOf(me) > routerMinimum[arth];
+        _executeWeth = weth.balanceOf(me) > routerMinimum[weth];
+        _executeMaha = maha.balanceOf(me) > routerMinimum[maha];
 
         performData = abi.encode(
-            _executeArthMaha,
+            _executeMaha,
             dummyData,
-            _executeMahaWeth,
+            _executeWeth,
             dummyData,
-            _executeCurve,
+            _executeArth,
             dummyData
         );
 
-        upkeepNeeded = _executeArthMaha || _executeMahaWeth || _executeCurve;
+        upkeepNeeded = _executeMaha || _executeWeth || _executeArth;
     }
 
     function performUpkeep(bytes calldata performData) external {
         (
-            bool _executeArthMaha,
-            bytes memory _arthMahaData,
-            bool _executeMahaWeth,
-            bytes memory _mahaWethData,
-            bool _executeCurve,
-            bytes memory _curveData
+            bool _executeMaha,
+            bytes memory _mahaData,
+            bool _executeWeth,
+            bytes memory _wethData,
+            bool _executeArth,
+            bytes memory _arthData
         ) = abi.decode(performData, (bool, bytes, bool, bytes, bool, bytes));
 
-        if (_executeArthMaha) arthMahaRouter.performUpkeep(_arthMahaData);
-        if (_executeMahaWeth) mahaWethRouter.performUpkeep(_mahaWethData);
-        if (_executeCurve) curveRouter.performUpkeep(_curveData);
+        if (_executeMaha) routers[maha].performUpkeep(_mahaData);
+        if (_executeWeth) routers[weth].performUpkeep(_wethData);
+        if (_executeArth) routers[arth].performUpkeep(_arthData);
     }
 
     /// @dev helper function to get add liquidty to all the pools in one go.
