@@ -17,8 +17,8 @@ async function main() {
   const lpTokenAddr = "0xdf34bad1d3b16c8f28c9cf95f15001949243a038";
   const poolAddr = "0xb4018cb02e264c3fcfe0f21a1f5cfbcaaba9f61f";
 
-  const FeeDistributor = await ethers.getContractFactory("CurveRouter");
-  const initData = FeeDistributor.interface.encodeFunctionData("initialize", [
+  const CurveRouter = await ethers.getContractFactory("CurveRouter");
+  const initData = CurveRouter.interface.encodeFunctionData("initialize", [
     config.gnosisSafe, // address _treasury,
     poolAddr, // ICurveCryptoV2 _pool,
     lpTokenAddr, // IERC20 _poolToken,
