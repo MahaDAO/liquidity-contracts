@@ -8,7 +8,7 @@ Contracts get funded with ETH, ARTH, MAHA, USDT/C from the ecosystem's revenue a
 
 All LP tokens and positions get accumalated at the project's treasury.
 
-Contracts are also keeper-compatible, which allows to automate the adding of liquidity using any keeper interface (like Chainlink automations).
+Contracts are also keeper-compatible, which allows them to be automated using Chainlink automations or any keeper management software.
 
 > :warning: **Contracts are not audited**: These contracts are not audited and are susceptible to high slippage attacks. Use at your own risks.
 
