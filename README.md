@@ -1,10 +1,18 @@
 # ARTH Liquidity Contracts
 
-These contracts focus on growing liquidity for the ARTH protocol from a share of the protocol's revenue.
+These contracts focus on growing liquidity for the entier ARTH protocol from the protocol's revenue.
 
-These contracts get funded with ETH, ARTH, USDT/C from the protocol's revenue and on a regular basis gets added as liquidity into the protocol. All LP tokens and positions get accumalated at the project's treasury.
+![Liquidity Router](./router.png "Liquidity Router flow")
+
+Contracts get funded with ETH, ARTH, MAHA, USDT/C and on a regular basis attempts to add these tokens as liquidity into the protocol. All LP tokens and positions get accumalated at the project's treasury. All contracts are keeper-compatible, which allows to automate the adding of liquidity using any keeper interface (like Chainlink automations).
+
+> :warning: **Contracts are not audited**: These contracts are not audited and are susceptible to high slippage attacks. Use at your own risks.
 
 Treasury - [0x6357EDbfE5aDA570005ceB8FAd3139eF5A8863CC](https://etherscan.io/address/0x6357EDbfE5aDA570005ceB8FAd3139eF5A8863CC)
+
+### MasterRouter.sol
+
+This is the master contract that collects all the revenue and fees earned from the protocol and distributes it to the various routers.
 
 ### CurveRouter.sol
 
