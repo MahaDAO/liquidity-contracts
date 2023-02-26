@@ -21,27 +21,8 @@ contract MasterRouter is
     address private me;
 
     IRouter public curveRouter;
-    IRouter public arthMahaRouter;
     IRouter public mahaWethRouter;
-    IRouter public arthWethRouter;
-
-    struct RouterConfig {
-        bool paused;
-        IERC20 tokenA;
-        IERC20 tokenB;
-        uint256 tokenAmin;
-        uint256 tokenBmin;
-    }
-
-    mapping(IRouter => RouterConfig) public configs;
-
-    event RouterConfigSet(
-        address indexed who,
-        address router,
-        RouterConfig config
-    );
-
-    event RouterToggled(address indexed who, address router, bool val);
+    IRouter public arthMahaRouter;
 
     receive() external payable {
         weth.deposit{value: msg.value}();
@@ -51,7 +32,7 @@ contract MasterRouter is
         address _treasury,
         IRouter _curveRouter,
         IRouter _arthMahaRouter,
-        IRouter _arthWethRouter,
+        IRouter _mahaWethRouter,
         IERC20 _arth,
         IERC20 _maha,
         IWETH _weth
@@ -61,7 +42,7 @@ contract MasterRouter is
 
         curveRouter = _curveRouter;
         arthMahaRouter = _arthMahaRouter;
-        arthWethRouter = _arthWethRouter;
+        mahaWethRouter = _mahaWethRouter;
         arth = _arth;
         maha = _maha;
         weth = _weth;
@@ -74,22 +55,6 @@ contract MasterRouter is
 
     function getRevision() public pure virtual override returns (uint256) {
         return 1;
-    }
-
-    /// @dev router[0] = curveRouter, router[1] = ARTH-MAHA, router[2] = ARTH-WETH
-    /// @param router the address of router
-    /// @param config config data related to router tokenA and tokenB address and tokenMin values and poolIndex
-    function setRouterConfig(
-        IRouter router,
-        RouterConfig memory config
-    ) external onlyOwner {
-        configs[router] = config;
-        emit RouterConfigSet(msg.sender, address(router), config);
-    }
-
-    function toggleRouter(IRouter router) external onlyOwner {
-        configs[router].paused = !configs[router].paused;
-        emit RouterToggled(msg.sender, address(router), configs[router].paused);
     }
 
     function checkUpkeep(
@@ -106,6 +71,8 @@ contract MasterRouter is
         // prepare the return data
         IRouter[] memory validRouters = new IRouter[](length);
         // uint256 j = 0;
+
+        // TODO; need to write some checks and balances
 
         // for (uint i = 0; i < routers.length; i++) {
         //     IRouter router = routers[i];
@@ -128,48 +95,57 @@ contract MasterRouter is
 
     function performUpkeep(bytes calldata performData) external {
         (
-            bool executeArthMaha,
-            bytes memory arthMahaData,
-            bool executeArthWeth,
-            bytes memory arthWethData,
-            bool executeCurve,
-            bytes memory curveData
+            bool _executeArthMaha,
+            bytes memory _arthMahaData,
+            bool _executeArthWeth,
+            bytes memory _arthWethData,
+            bool _executeCurve,
+            bytes memory _curveData
         ) = abi.decode(performData, (bool, bytes, bool, bytes, bool, bytes));
 
-        // first send ARTH & MAHA to the ARTH/MAHA Router (based on MAHA collected)
-        if (executeArthMaha) arthMahaRouter.performUpkeep(arthMahaData);
-
-        // second send ARTH & WETH to the ARTH/WETH Router (based on WETH collected)
-        if (executeArthWeth) arthWethRouter.performUpkeep(arthWethData);
-
-        // third send remaining ARTH to the Curve Router (based on ARTH left over)
-        if (executeCurve) arthMahaRouter.performUpkeep(curveData);
+        if (_executeArthMaha) arthMahaRouter.performUpkeep(_arthMahaData);
+        if (_executeArthWeth) arthWethRouter.performUpkeep(_arthWethData);
+        if (_executeCurve) arthMahaRouter.performUpkeep(_curveData);
     }
 
+    /// @dev helper function to get add liquidty to all the pools in one go.
     function addLiquidityToPool() external {
-        if (me.balance > 0) weth.deposit{value: me.balance}();
+        executeCurve();
+        executeUniswapARTHMAHA();
+        executeUniswapMAHAWETH();
+    }
 
-        uint256 mahaBalance = maha.balanceOf(me);
-        uint256 wethBalance = weth.balanceOf(me);
+    /// @notice adds whatever ARTH is in this contract into the curve pool
+    function executeCurve() public {
         uint256 arthBalance = arth.balanceOf(me);
 
-        // 100% of arth: token0 is ARTH and token1 is USDC according to the curve pool
+        // token0 is ARTH and token1 is USDC according to the curve pool
         if (arthBalance > 0)
             curveRouter.execute(
                 arthBalance,
                 0,
                 abi.encode(uint256(0), uint256(0))
             );
+    }
 
-        // 100% of maha; token0 is MAHA Token and token1 is ARTH Token according to the Uniswap v3 pool
+    /// @notice adds whatever MAHA is in this contract into the ARTH/MAHA 1% Uniswap pool
+    function executeUniswapARTHMAHA() public {
+        uint256 mahaBalance = maha.balanceOf(me);
+
+        // token0 is MAHA Token and token1 is ARTH Token according to the Uniswap v3 pool
         if (mahaBalance > 0)
             arthMahaRouter.execute(
                 mahaBalance,
                 0,
                 abi.encode(uint256(0), uint256(0))
             );
+    }
 
-        // 100% of weth; token0 is MAHA Token and token1 is WETH Token according to the Uniswap v3 pool
+    /// @notice adds whatever WETH is in this contract into the WETH/MAHA 1% Uniswap pool
+    function executeUniswapMAHAWETH() public {
+        uint256 wethBalance = weth.balanceOf(me);
+
+        // token0 is MAHA Token and token1 is WETH Token according to the Uniswap v3 pool
         if (wethBalance > 0)
             mahaWethRouter.execute(
                 0,
