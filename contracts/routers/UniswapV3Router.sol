@@ -214,7 +214,7 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
     function _flush(address to) internal {
         uint256 token0Amount = token0.balanceOf(me);
         uint256 token1Amount = token1.balanceOf(me);
-        if (token0Amount > 0) token0.transferFrom(to, me, token0Amount);
-        if (token1Amount > 0) token1.transferFrom(to, me, token1Amount);
+        if (token0Amount > 0) token0.transfer(to, token0Amount);
+        if (token1Amount > 0) token1.transfer(to, token1Amount);
     }
 }
