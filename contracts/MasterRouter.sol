@@ -43,6 +43,10 @@ contract MasterRouter is
 
     event RouterToggled(address indexed who, address router, bool val);
 
+    receive() external payable {
+        weth.deposit{value: msg.value}();
+    }
+
     function initialize(
         address _treasury,
         IRouter _curveRouter,
@@ -64,15 +68,8 @@ contract MasterRouter is
 
         // give approvals to routers
         arth.approve(address(curveRouter), type(uint256).max);
-
-        arth.approve(address(arthMahaRouter), type(uint256).max);
         maha.approve(address(arthMahaRouter), type(uint256).max);
-
-        arth.approve(address(arthWethRouter), type(uint256).max);
-        weth.approve(address(arthWethRouter), type(uint256).max);
-
-        maha.approve(address(arthMahaRouter), type(uint256).max);
-        weth.approve(address(arthMahaRouter), type(uint256).max);
+        weth.approve(address(mahaWethRouter), type(uint256).max);
     }
 
     function getRevision() public pure virtual override returns (uint256) {
@@ -156,37 +153,28 @@ contract MasterRouter is
         uint256 wethBalance = weth.balanceOf(me);
         uint256 arthBalance = arth.balanceOf(me);
 
-        // 100% of arth: token0 is ARTH and token1 is USDC
-        curveRouter.execute(arthBalance, 0, abi.encode(uint256(0), uint256(0)));
+        // 100% of arth: token0 is ARTH and token1 is USDC according to the curve pool
+        if (arthBalance > 0)
+            curveRouter.execute(
+                arthBalance,
+                0,
+                abi.encode(uint256(0), uint256(0))
+            );
 
         // 100% of maha; token0 is MAHA Token and token1 is ARTH Token according to the Uniswap v3 pool
-        arthMahaRouter.execute(
-            mahaBalance,
-            0,
-            abi.encode(
-                configs[arthMahaRouter].tokenAmin,
-                configs[arthMahaRouter].tokenBmin
-            )
-        );
+        if (mahaBalance > 0)
+            arthMahaRouter.execute(
+                mahaBalance,
+                0,
+                abi.encode(uint256(0), uint256(0))
+            );
 
         // 100% of weth; token0 is MAHA Token and token1 is WETH Token according to the Uniswap v3 pool
-        mahaWethRouter.execute(
-            0,
-            wethBalance,
-            abi.encode(
-                configs[mahaWethRouter].tokenAmin,
-                configs[mahaWethRouter].tokenBmin
-            )
-        );
-
-        // // 100% of weth; token0 is ARTH Token and token1 is WETH Token according to the Uniswap v3 pool
-        // arthMahaRouter.execute(
-        //     0,
-        //     wethBalance,
-        //     abi.encode(
-        //         configs[arthMahaRouter].tokenAmin,
-        //         configs[arthMahaRouter].tokenBmin
-        //     )
-        // );
+        if (wethBalance > 0)
+            mahaWethRouter.execute(
+                0,
+                wethBalance,
+                abi.encode(uint256(0), uint256(0))
+            );
     }
 }

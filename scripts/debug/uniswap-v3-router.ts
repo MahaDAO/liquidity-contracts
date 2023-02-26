@@ -11,7 +11,7 @@ async function main() {
   await helpers.impersonateAccount(address);
   await helpers.setBalance(address, "0x56BC75E2D63100000");
 
-  const nftManager = "0xdf34bad1d3b16c8f28c9cf95f15001949243a038";
+  const nftManager = "0xc36442b4a4522e871399cd717abdd847ab11fe88";
   const nftId = 100;
 
   console.log("init");
@@ -20,7 +20,8 @@ async function main() {
     nftManager, // INonfungiblePositionManager _manager,
     nftId, // uint256 _poolId,
     config.arthAddr, // IERC20 _token0,
-    config.mahaAddr // IERC20 _token1
+    config.mahaAddr, // IERC20 _token1
+    10000 // uint24 _fee
   );
 
   const arth = await ethers.getContractAt("IERC20", config.arthAddr);
