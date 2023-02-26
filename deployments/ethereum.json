@@ -13,5 +13,10 @@
     "abi": "UniswapV3Router",
     "verified": true,
     "address": "0x5b1741715e5334349dca0eEa09c409271B5811Fb"
+  },
+  "UniswapV3Router-MAHAWETH-10000": {
+    "abi": "TransparentUpgradeableProxy",
+    "verified": true,
+    "address": "0x32fFE78b774990279456466f0eb6A08cF096bca5"
   }
 }

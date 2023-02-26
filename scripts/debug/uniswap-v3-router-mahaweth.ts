@@ -52,6 +52,8 @@ async function main() {
   console.log("weth tokens in LP before");
   console.log((await weth.balanceOf(poolAddress)).toString());
 
+  console.log("execData", execData);
+
   console.log("executing lp strategy");
   await instance.connect(whale).execute(0, balance, execData);
   // console.log("peformData", ret.performData);
