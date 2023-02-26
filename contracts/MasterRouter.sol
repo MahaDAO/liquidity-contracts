@@ -9,6 +9,8 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IWETH} from "./interfaces/IWETH.sol";
 
+import "hardhat/console.sol";
+
 contract MasterRouter is
     Ownable,
     VersionedInitializable,
@@ -42,14 +44,25 @@ contract MasterRouter is
         address _treasury,
         IERC20 _arth,
         IERC20 _maha,
-        IWETH _weth
+        IWETH _weth,
+        IRouter _curveRouter,
+        IRouter _mahaWethRouter
     ) external initializer {
-        _transferOwnership(_treasury);
         me = address(this);
 
         arth = _arth;
         maha = _maha;
         weth = _weth;
+
+        routerMinimum[weth] = 1e18; // 1 eth min
+        routers[weth] = _mahaWethRouter;
+        weth.approve(address(_mahaWethRouter), type(uint256).max);
+
+        routerMinimum[arth] = 500e18; // 500 arth min
+        routers[arth] = _curveRouter;
+        arth.approve(address(_curveRouter), type(uint256).max);
+
+        _transferOwnership(_treasury);
     }
 
     function getRevision() public pure virtual override returns (uint256) {
@@ -63,7 +76,6 @@ contract MasterRouter is
     ) external onlyOwner {
         routerMinimum[_token] = minNeeded;
         routers[_token] = _router;
-
         _token.approve(address(_router), type(uint256).max);
 
         emit RegisterRouter(msg.sender, _token, _router, minNeeded);
@@ -77,23 +89,24 @@ contract MasterRouter is
         override
         returns (bool upkeepNeeded, bytes memory performData)
     {
-        bool _executeMaha;
-        bool _executeWeth;
-        bool _executeArth;
+        uint256 _arthBal = arth.balanceOf(me);
+        uint256 _wethBal = weth.balanceOf(me);
+        uint256 _mahaBal = maha.balanceOf(me);
 
-        bytes memory dummyData = abi.encode(uint256(0), uint256(0));
-
-        _executeArth = arth.balanceOf(me) > routerMinimum[arth];
-        _executeWeth = weth.balanceOf(me) > routerMinimum[weth];
-        _executeMaha = maha.balanceOf(me) > routerMinimum[maha];
+        bool _executeArth = _arthBal >= routerMinimum[arth] && _arthBal > 0;
+        bool _executeWeth = _wethBal >= routerMinimum[weth] && _wethBal > 0;
+        bool _executeMaha = _mahaBal >= routerMinimum[maha] && _mahaBal > 0;
 
         performData = abi.encode(
-            _executeMaha,
-            dummyData,
-            _executeWeth,
-            dummyData,
-            _executeArth,
-            dummyData
+            // ARTH/USDC Cruve
+            _executeArth ? _arthBal : 0,
+            abi.encode(_arthBal, uint256(0)), // uint256 tokenArthAmount, uint256 minLptokens
+            // MAHA/WETH Uniswap
+            _executeWeth ? _wethBal : 0,
+            abi.encode(uint256(0), uint256(0)), // uint256 amount0Min, uint256 amount1Min
+            // ARTH/MAHA Uniswap
+            _executeMaha ? _mahaBal : 0,
+            abi.encode(uint256(0), uint256(0)) // uint256  amount0Min, uint256 amount1Min
         );
 
         upkeepNeeded = _executeMaha || _executeWeth || _executeArth;
@@ -101,17 +114,20 @@ contract MasterRouter is
 
     function performUpkeep(bytes calldata performData) external {
         (
-            bool _executeMaha,
-            bytes memory _mahaData,
-            bool _executeWeth,
+            uint256 _arthBal,
+            bytes memory _arthData,
+            uint256 _wethBal,
             bytes memory _wethData,
-            bool _executeArth,
-            bytes memory _arthData
-        ) = abi.decode(performData, (bool, bytes, bool, bytes, bool, bytes));
+            uint256 _mahaBal,
+            bytes memory _mahaData
+        ) = abi.decode(
+                performData,
+                (uint256, bytes, uint256, bytes, uint256, bytes)
+            );
 
-        if (_executeMaha) routers[maha].performUpkeep(_mahaData);
-        if (_executeWeth) routers[weth].performUpkeep(_wethData);
-        if (_executeArth) routers[arth].performUpkeep(_arthData);
+        if (_mahaBal > 0) routers[maha].execute(_mahaBal, 0, _mahaData);
+        if (_wethBal > 0) routers[weth].execute(0, _wethBal, _wethData);
+        if (_arthBal > 0) routers[arth].execute(_arthBal, 0, _arthData);
     }
 
     /// @dev helper function to get add liquidty to all the pools in one go.
