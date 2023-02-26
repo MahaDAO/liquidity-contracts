@@ -16,7 +16,7 @@ Treasury - [0x6357EDbfE5aDA570005ceB8FAd3139eF5A8863CC](https://etherscan.io/add
 
 ### MasterRouter.sol
 
-This is the master contract where all the revenue gets collected. From here on, the revenue gets sent to all the different routers to get added as liquidity.
+This is the master contract where all the revenue gets collected. From here on, tokens gets split and sent to all the different routers below.
 
 ### CurveRouter.sol
 
