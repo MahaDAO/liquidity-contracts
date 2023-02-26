@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
 
-// Uncomment this line to use console.log
 import {IRouter} from "./interfaces/IRouter.sol";
 import {VersionedInitializable} from "./proxy/VersionedInitializable.sol";
 import {KeeperCompatibleInterface} from "./interfaces/KeeperCompatibleInterface.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IWETH} from "./interfaces/IWETH.sol";
-
-import "hardhat/console.sol";
 
 contract MasterRouter is
     Ownable,

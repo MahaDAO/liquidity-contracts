@@ -13,8 +13,6 @@ import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import {TransferHelper} from "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 
-import "hardhat/console.sol";
-
 // collect tokens and use it to add liquidity to ARTH/ETH and ARTH/MAHA LP pairs.
 contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
     using SafeMath for uint256;
@@ -197,11 +195,6 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
                     amount1Min: amount1Min,
                     deadline: block.timestamp
                 });
-
-        console.log("token0Amount", token0Amount);
-        console.log("token1Amount", token1Amount);
-        console.log("amount0Min", amount0Min);
-        console.log("amount1Min", amount1Min);
 
         manager.increaseLiquidity(params);
     }
