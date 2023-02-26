@@ -18,5 +18,10 @@
     "abi": "TransparentUpgradeableProxy",
     "verified": true,
     "address": "0x32fFE78b774990279456466f0eb6A08cF096bca5"
+  },
+  "MasterRouter-Impl": {
+    "abi": "MasterRouter",
+    "verified": false,
+    "address": "0x361ec649B3315483e4235d0E1E51be7ced6Ab82D"
   }
 }

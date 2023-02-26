@@ -175,4 +175,9 @@ contract MasterRouter is
                 abi.encode(uint256(0), uint256(0))
             );
     }
+
+    /// @dev admin-only. send tokens back to treasury
+    function refund(IERC20 token) public onlyOwner {
+        token.transfer(msg.sender, token.balanceOf(me));
+    }
 }
