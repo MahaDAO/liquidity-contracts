@@ -77,11 +77,11 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
         );
 
         uint256 price = _getPrice();
-        uint256 amount1ByExchangeRate = (token1Amount * price) / 1e18;
+        uint256 amount1ByToken0 = (token1Amount * price) / 1e18;
 
         // in most cases we are only feeding the contract with ETH, so we feed in
         // half for maha
-        if (amount1ByExchangeRate > token0Amount) {
+        if (amount1ByToken0 > token0Amount) {
             _swapExactInputSingle(
                 address(token1),
                 address(token0),
@@ -91,6 +91,8 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
 
             token0Amount = token0.balanceOf(me);
             token1Amount = token1.balanceOf(me);
+        } else if (false) {
+            // todo; the other way around
         }
 
         // attempt to add liquidity
@@ -100,7 +102,7 @@ contract UniswapV3Router is Ownable, VersionedInitializable, IRouter {
         _flush(msg.sender);
     }
 
-    function checkUpkeep(
+    function checkUpkeep(amount1ByToken0
         bytes calldata checkData
     )
         external
