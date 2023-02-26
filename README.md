@@ -4,7 +4,11 @@ These contracts focus on growing liquidity for the entier ARTH protocol from the
 
 ![Liquidity Router](./router.png "Liquidity Router flow")
 
-Contracts get funded with ETH, ARTH, MAHA, USDT/C and on a regular basis attempts to add these tokens as liquidity into the protocol. All LP tokens and positions get accumalated at the project's treasury. All contracts are keeper-compatible, which allows to automate the adding of liquidity using any keeper interface (like Chainlink automations).
+Contracts get funded with ETH, ARTH, MAHA, USDT/C from the ecosystem's revenue and these tokens get added onto as liquidity into the protocol on a regular basis.
+
+All LP tokens and positions get accumalated at the project's treasury.
+
+Contracts are also keeper-compatible, which allows to automate the adding of liquidity using any keeper interface (like Chainlink automations).
 
 > :warning: **Contracts are not audited**: These contracts are not audited and are susceptible to high slippage attacks. Use at your own risks.
 
